@@ -2,22 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 
-function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+export const dynamic = 'force-dynamic'
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables')
-  }
-
-  return createClient(supabaseUrl, supabaseServiceKey)
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseClient()
     const body = await request.json()
 
+    // Check email not already taken
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -31,51 +27,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let userId: string
+    // Hash password — default is 'client123'
+    const passwordHash = await bcrypt.hash('client123', 10)
 
-    if (body.createCredentials) {
-      const defaultPassword = 'client123'
-      const passwordHash = await bcrypt.hash(defaultPassword, 10)
-
-      const { data: newUser, error: userError } = await supabase
-        .from('users')
-        .insert({
-          email: body.email,
-          name: body.name,
-          password_hash: passwordHash,
-          role: 'CLIENT'
-        })
-        .select()
-        .single()
-
-      if (userError) throw userError
-      userId = newUser.id
-    } else {
-      const { data: newUser, error: userError } = await supabase
-        .from('users')
-        .insert({
-          email: body.email,
-          name: body.name,
-          role: 'CLIENT'
-        })
-        .select()
-        .single()
-
-      if (userError) throw userError
-      userId = newUser.id
-    }
-
-    const advisorUser = await supabase
+    const { data: newUser, error: userError } = await supabase
       .from('users')
-      .select('id')
-      .eq('role', 'ADVISOR')
-      .maybeSingle()
+      .insert({
+        email: body.email,
+        name: body.name,
+        password_hash: passwordHash,
+        role: 'CLIENT',
+      })
+      .select()
+      .single()
+
+    if (userError) throw userError
+
+    // Get the advisor who is creating this client (passed from the session)
+    const advisorId = body.advisorId || null
 
     const { data: newClient, error: clientError } = await supabase
       .from('clients')
       .insert({
-        user_id: userId,
-        advisor_id: advisorUser.data?.id || null,
+        user_id: newUser.id,
+        advisor_id: advisorId,
         phone: body.phone || null,
         date_of_birth: body.dateOfBirth || null,
         occupation: body.occupation || null,
@@ -93,7 +68,7 @@ export async function POST(request: NextRequest) {
         decision_temperament: body.decisionTemperament || 'BALANCED',
         behavioral_summary: body.behavioralSummary || null,
         status: 'ACTIVE',
-        onboarded_at: new Date().toISOString()
+        onboarded_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -103,14 +78,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       clientId: newClient.id,
-      message: body.createCredentials
-        ? 'Client onboarded successfully. Default password: client123'
-        : 'Client onboarded successfully'
+      credentials: {
+        email: body.email,
+        password: 'client123',
+      },
     })
   } catch (error: any) {
     console.error('Onboarding error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to onboard client' },
+      { error: error.message || 'Failed to create client' },
       { status: 500 }
     )
   }

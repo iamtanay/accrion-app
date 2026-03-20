@@ -284,3 +284,45 @@ CREATE POLICY "anon: full access to behavioral_snapshots"
 -- advisor_availability
 CREATE POLICY "anon: full access to advisor_availability"
   ON advisor_availability FOR ALL TO anon USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow anon to insert goals"
+  ON goals FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to insert behavioral_flags"
+  ON behavioral_flags FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to insert decision_log"
+  ON decision_log FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to insert communications"
+  ON communications FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to insert users"
+  ON users FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to insert clients"
+  ON clients FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to update users"
+  ON users FOR UPDATE
+  TO anon
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Allow anon to update clients"
+  ON clients FOR UPDATE
+  TO anon
+  USING (true)
+  WITH CHECK (true);

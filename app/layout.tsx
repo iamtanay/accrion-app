@@ -22,8 +22,11 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Accrion Advisory CRM',
+  title: 'Accrion.',
   description: 'Long-horizon behavioral financial advisory platform',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

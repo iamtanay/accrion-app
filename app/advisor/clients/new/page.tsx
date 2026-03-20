@@ -70,10 +70,12 @@ export default function NewClientPage() {
     setLoading(true)
 
     try {
+      const userStr = sessionStorage.getItem('user')
+      const advisorId = userStr ? JSON.parse(userStr).id : null
       const response = await fetch('/api/advisor/clients/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, advisorId })
       })
 
       const data = await response.json()

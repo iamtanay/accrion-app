@@ -6,7 +6,7 @@ export async function getFlagsByClientId(clientId: string) {
     .from('behavioral_flags')
     .select('*')
     .eq('client_id', clientId)
-    .order('detected_at', { ascending: false })
+    .order('date', { ascending: false })
 
   if (error) {
     console.error('Error fetching flags:', error)
@@ -27,8 +27,8 @@ export async function getAllActiveFlags() {
         user:users!clients_user_id_fkey(name, email)
       )
     `)
-    .eq('status', 'ACTIVE')
-    .order('detected_at', { ascending: false })
+    .eq('resolved', false)
+    .order('date', { ascending: false })
 
   if (error) throw error
   return data || []
@@ -36,18 +36,20 @@ export async function getAllActiveFlags() {
 
 export async function createFlag(flagData: {
   client_id: string
-  flag_type: string
-  severity: string
-  description?: string
-  status: string
-  detected_at?: string
+  date?: string
+  market_context: string
+  client_behavior: string
+  advisor_response?: string
+  severity?: string
+  is_internal?: boolean
 }) {
   const supabase = getServerSupabase()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .insert([{
       ...flagData,
-      detected_at: flagData.detected_at || new Date().toISOString(),
+      date: flagData.date || new Date().toISOString(),
+      resolved: false,
     }])
     .select()
     .single()
@@ -69,15 +71,11 @@ export async function updateFlag(flagId: string, updates: any) {
   return data
 }
 
-export async function resolveFlag(flagId: string, resolution: string) {
+export async function resolveFlag(flagId: string) {
   const supabase = getServerSupabase()
   const { data, error } = await supabase
     .from('behavioral_flags')
-    .update({
-      status: 'RESOLVED',
-      resolved_at: new Date().toISOString(),
-      resolution,
-    })
+    .update({ resolved: true })
     .eq('id', flagId)
     .select()
     .single()

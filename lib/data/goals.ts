@@ -3,7 +3,7 @@ import { getServerSupabase } from '@/lib/supabase/server'
 export async function getGoalsByClientId(clientId: string) {
   const supabase = getServerSupabase()
   const { data, error } = await supabase
-    .from('client_goals')
+    .from('goals')
     .select('*')
     .eq('client_id', clientId)
     .order('created_at', { ascending: false })
@@ -18,15 +18,18 @@ export async function getGoalsByClientId(clientId: string) {
 
 export async function createGoal(goalData: {
   client_id: string
-  goal_type: string
-  target_value?: number
-  target_date?: string
+  title: string
   description?: string
-  status: string
+  target_amount?: number
+  target_date?: string
+  priority?: string
+  category: string
+  status?: string
+  progress_notes?: string
 }) {
   const supabase = getServerSupabase()
   const { data, error } = await supabase
-    .from('client_goals')
+    .from('goals')
     .insert([goalData])
     .select()
     .single()
@@ -38,7 +41,7 @@ export async function createGoal(goalData: {
 export async function updateGoal(goalId: string, updates: any) {
   const supabase = getServerSupabase()
   const { data, error } = await supabase
-    .from('client_goals')
+    .from('goals')
     .update(updates)
     .eq('id', goalId)
     .select()
@@ -51,7 +54,7 @@ export async function updateGoal(goalId: string, updates: any) {
 export async function deleteGoal(goalId: string) {
   const supabase = getServerSupabase()
   const { error } = await supabase
-    .from('client_goals')
+    .from('goals')
     .delete()
     .eq('id', goalId)
 
