@@ -68,16 +68,15 @@ export default function LoginPage() {
         }} />
       </div>
 
-      {/* Theme Toggle */}
-      <div className="absolute top-6 right-6 z-10">
-        <ThemeToggle />
-      </div>
-
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[480px]">
           {/* Logo & Header */}
-          <div className="text-center mb-10">
+          <div className="relative text-center mb-10">
+            {/* Theme toggle — top right of logo area */}
+            <div className="absolute right-0 top-0">
+              <ThemeToggle />
+            </div>
             <h1 className="font-serif text-5xl mb-3 text-fg-primary tracking-tight">
               Accrion.
             </h1>
