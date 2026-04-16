@@ -438,28 +438,135 @@ export default function ClientDetailPage() {
 
 // ── Tab components ────────────────────────────────────────────
 
+const TEMPERAMENT_META: Record<string, { color: string; bg: string; border: string; desc: string }> = {
+  DELIBERATE:    { color: 'text-accent',   bg: 'bg-accent/8',   border: 'border-accent/20',   desc: 'Slow, methodical. Needs data before acting. Values process over speed.' },
+  REACTIVE:      { color: 'text-danger',   bg: 'bg-danger/8',   border: 'border-danger/20',   desc: 'Emotionally driven. Susceptible to fear and market noise. Needs anchoring.' },
+  AVOIDANT:      { color: 'text-fg-muted', bg: 'bg-bg-tertiary', border: 'border-border',      desc: 'Delays difficult decisions. Risk of inaction at critical moments.' },
+  OVERCONFIDENT: { color: 'text-warning',  bg: 'bg-warning/8',  border: 'border-warning/20',  desc: 'Overestimates ability and underestimates risk. Watch for excessive concentration.' },
+  ANCHORED:      { color: 'text-warning',  bg: 'bg-warning/8',  border: 'border-warning/20',  desc: 'Fixates on cost basis or reference points. Struggles to cut losses.' },
+  BALANCED:      { color: 'text-success',  bg: 'bg-success/8',  border: 'border-success/20',  desc: 'Measured and rational. Makes decisions aligned with stated risk tolerance.' },
+}
+
+function RiskGapChart({ stated, revealed }: { stated: number | null; revealed: number | null }) {
+  const s = stated ?? 0
+  const r = revealed ?? 0
+  const gap = s - r
+  const absGap = Math.abs(gap)
+  const hasSignificant = absGap >= 3
+
+  return (
+    <div>
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <div className="text-xs text-fg-muted uppercase tracking-wider mb-1">Stated</div>
+          <div className="font-serif text-5xl text-fg-primary leading-none">{s}<span className="text-lg text-fg-muted">/10</span></div>
+        </div>
+        <div className="flex-1 mx-6 flex flex-col items-center justify-end">
+          {hasSignificant ? (
+            <div className={`text-xs font-semibold px-2.5 py-1 rounded-full mb-2 ${gap > 0 ? 'bg-warning/10 text-warning border border-warning/20' : 'bg-danger/10 text-danger border border-danger/20'}`}>
+              {gap > 0 ? `+${absGap} pt gap` : `−${absGap} pt gap`}
+            </div>
+          ) : (
+            <div className="text-xs text-fg-muted px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20 mb-2">Aligned</div>
+          )}
+        </div>
+        <div className="text-right">
+          <div className="text-xs text-fg-muted uppercase tracking-wider mb-1">Revealed</div>
+          <div className="font-serif text-5xl text-fg-primary leading-none">{r}<span className="text-lg text-fg-muted">/10</span></div>
+        </div>
+      </div>
+
+      {/* Dual bar visualization */}
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-xs text-fg-muted mb-1">
+            <span>Stated risk tolerance</span>
+            <span>{s}/10</span>
+          </div>
+          <div className="h-3 bg-bg-tertiary rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${s * 10}%`, background: 'var(--accent)', opacity: 0.5 }}
+            />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-fg-muted mb-1">
+            <span>Revealed risk tolerance</span>
+            <span>{r}/10</span>
+          </div>
+          <div className="h-3 bg-bg-tertiary rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${r * 10}%`, background: 'var(--accent)' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {hasSignificant && (
+        <div className={`mt-4 p-3 rounded-lg border flex items-start gap-2 ${gap > 0 ? 'bg-warning/8 border-warning/20' : 'bg-danger/8 border-danger/20'}`}>
+          <AlertCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${gap > 0 ? 'text-warning' : 'text-danger'}`} />
+          <div className="text-xs text-fg-secondary leading-relaxed">
+            {gap > 0
+              ? `Client states higher risk tolerance than behavior reveals. They may underestimate their emotional reaction to losses. Consider stress-testing scenarios in next review.`
+              : `Client behaves more aggressively than stated tolerance. Watch for overconfidence or thrill-seeking. Ensure portfolio aligns with stated, not revealed, tolerance.`}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function OverviewTab({ client, riskGap, hasSignificantGap }: any) {
+  const temperamentMeta = client.decision_temperament ? TEMPERAMENT_META[client.decision_temperament] : null
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {/* Risk Gap — the centerpiece */}
       <Card>
-        <CardHeader><CardTitle>Profile Information</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Behavioral Risk Profile</CardTitle></CardHeader>
         <CardContent>
-          <dl className="space-y-4">
-            <div><dt className="text-sm text-fg-muted mb-1">Temperament</dt><dd className="text-fg-primary font-medium">{client.decision_temperament || 'Not assessed'}</dd></div>
-            <div><dt className="text-sm text-fg-muted mb-1">Stated Risk Score</dt><dd className="text-fg-primary font-medium text-2xl">{client.stated_risk_score}/10</dd></div>
-            <div><dt className="text-sm text-fg-muted mb-1">Revealed Risk Score</dt><dd className="text-fg-primary font-medium text-2xl">{client.revealed_risk_score}/10</dd></div>
-            {hasSignificantGap && (
-              <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/30 rounded">
-                <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium text-warning mb-1">Significant Risk Gap</div>
-                  <div className="text-xs text-fg-secondary">{riskGap > 0 ? 'States higher' : 'Acts more'} risk tolerance ({Math.abs(riskGap)} points)</div>
-                </div>
-              </div>
-            )}
-          </dl>
+          <RiskGapChart stated={client.stated_risk_score} revealed={client.revealed_risk_score} />
         </CardContent>
       </Card>
+
+      {/* Temperament card */}
+      <Card>
+        <CardHeader><CardTitle>Decision Temperament</CardTitle></CardHeader>
+        <CardContent>
+          {temperamentMeta ? (
+            <div>
+              <div className={`inline-flex items-center px-4 py-2 rounded-lg border mb-4 ${temperamentMeta.bg} ${temperamentMeta.border}`}>
+                <span className={`font-semibold text-lg ${temperamentMeta.color}`}>{client.decision_temperament}</span>
+              </div>
+              <p className="text-sm text-fg-secondary leading-relaxed mb-5">{temperamentMeta.desc}</p>
+
+              {(client.panic_threshold || client.discomfort_budget) && (
+                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border">
+                  {client.panic_threshold != null && (
+                    <div className="p-3 bg-bg-tertiary rounded-lg">
+                      <div className="text-xs text-fg-muted mb-1">Panic Threshold</div>
+                      <div className="font-serif text-2xl text-fg-primary">{client.panic_threshold}<span className="text-sm text-fg-muted">%</span></div>
+                    </div>
+                  )}
+                  {client.discomfort_budget != null && (
+                    <div className="p-3 bg-bg-tertiary rounded-lg">
+                      <div className="text-xs text-fg-muted mb-1">Discomfort Budget</div>
+                      <div className="font-serif text-2xl text-fg-primary">{client.discomfort_budget}<span className="text-sm text-fg-muted">%</span></div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-fg-muted text-sm py-4">Temperament not yet assessed</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Relationship details */}
       <Card>
         <CardHeader><CardTitle>Relationship Details</CardTitle></CardHeader>
         <CardContent>
@@ -468,9 +575,24 @@ function OverviewTab({ client, riskGap, hasSignificantGap }: any) {
             <div><dt className="text-sm text-fg-muted mb-1">Occupation</dt><dd className="text-fg-primary">{client.occupation || '—'}</dd></div>
             <div><dt className="text-sm text-fg-muted mb-1">Onboarded</dt><dd className="text-fg-primary">{client.onboarded_at ? format(new Date(client.onboarded_at), 'MMMM d, yyyy') : '—'}</dd></div>
             <div><dt className="text-sm text-fg-muted mb-1">Last Review</dt><dd className="text-fg-primary">{client.last_reviewed_at ? format(new Date(client.last_reviewed_at), 'MMMM d, yyyy') : 'No reviews yet'}</dd></div>
+            {client.marital_status && <div><dt className="text-sm text-fg-muted mb-1">Marital Status</dt><dd className="text-fg-primary capitalize">{client.marital_status.toLowerCase()}</dd></div>}
+            {client.dependents > 0 && <div><dt className="text-sm text-fg-muted mb-1">Dependents</dt><dd className="text-fg-primary">{client.dependents}</dd></div>}
           </dl>
         </CardContent>
       </Card>
+
+      {/* Financial snapshot */}
+      <Card>
+        <CardHeader><CardTitle>Financial Snapshot</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="space-y-4">
+            <div><dt className="text-sm text-fg-muted mb-1">Income Range</dt><dd className="text-fg-primary">{client.income_range || '—'}</dd></div>
+            <div><dt className="text-sm text-fg-muted mb-1">Net Worth Band</dt><dd className="text-fg-primary">{client.net_worth_band || '—'}</dd></div>
+            <div><dt className="text-sm text-fg-muted mb-1">Primary Liability</dt><dd className="text-fg-primary">{client.primary_liability || '—'}</dd></div>
+          </dl>
+        </CardContent>
+      </Card>
+
       {client.behavioral_summary && (
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Behavioral Summary</CardTitle></CardHeader>
@@ -514,6 +636,27 @@ function GoalsTab({ goals, onAdd }: any) {
   )
 }
 
+const BIAS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  loss_aversion:  { label: 'Loss Aversion',  color: 'text-danger',  bg: 'bg-danger/10' },
+  present_bias:   { label: 'Present Bias',   color: 'text-warning', bg: 'bg-warning/10' },
+  anchoring:      { label: 'Anchoring',      color: 'text-accent',  bg: 'bg-accent/10' },
+  overconfidence: { label: 'Overconfidence', color: 'text-warning', bg: 'bg-warning/10' },
+  herd_behavior:  { label: 'Herd Behavior',  color: 'text-fg-muted', bg: 'bg-bg-tertiary' },
+  status_quo:     { label: 'Status Quo',     color: 'text-fg-secondary', bg: 'bg-bg-tertiary' },
+  default:        { label: 'Behavioral',     color: 'text-fg-muted', bg: 'bg-bg-tertiary' },
+}
+
+function inferBiasKey(behavior: string): string {
+  const b = (behavior || '').toLowerCase()
+  if (b.includes('sell') || b.includes('panic') || b.includes('crash') || b.includes('exit')) return 'loss_aversion'
+  if (b.includes('now') || b.includes('immediate') || b.includes('quick') || b.includes('today')) return 'present_bias'
+  if (b.includes('anchor') || b.includes('bought at') || b.includes('peak') || b.includes('original')) return 'anchoring'
+  if (b.includes('confident') || b.includes('certain') || b.includes('definitely')) return 'overconfidence'
+  if (b.includes('everyone') || b.includes('people are') || b.includes('heard')) return 'herd_behavior'
+  if (b.includes('avoid') || b.includes('wait') || b.includes('delay')) return 'status_quo'
+  return 'default'
+}
+
 function BehaviorTab({ flags, snapshots, onAddFlag }: any) {
   return (
     <div className="space-y-8">
@@ -527,57 +670,84 @@ function BehaviorTab({ flags, snapshots, onAddFlag }: any) {
         <div className="space-y-4">
           {flags.length === 0 ? (
             <Card><CardContent><p className="text-fg-muted text-center py-8">No flags recorded</p></CardContent></Card>
-          ) : flags.map((flag: any) => (
-            <Card key={flag.id}>
-              <CardContent>
-                <div className="flex items-start gap-4">
-                  <span className={`mt-1 w-3 h-3 rounded-full flex-shrink-0 ${flag.severity === 'HIGH' ? 'bg-danger' : flag.severity === 'MEDIUM' ? 'bg-warning' : 'bg-success'}`} />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <span className="text-fg-muted text-sm font-mono">{format(new Date(flag.date), 'MMM d, yyyy')}</span>
-                      <Badge variant={flag.resolved ? 'success' : 'warning'}>{flag.resolved ? 'Resolved' : 'Open'}</Badge>
-                      <Badge variant={flag.severity === 'HIGH' ? 'danger' : flag.severity === 'MEDIUM' ? 'warning' : 'neutral'} size="sm">{flag.severity}</Badge>
-                      {flag.is_internal && <Badge variant="neutral" size="sm">Internal</Badge>}
-                    </div>
-                    <div className="text-xs text-fg-muted mb-1">Market Context</div>
-                    <p className="text-sm text-fg-secondary mb-3">{flag.market_context}</p>
-                    <div className="text-xs text-fg-muted mb-1">Client Behavior</div>
-                    <p className="text-fg-primary mb-2">{flag.client_behavior}</p>
-                    {flag.advisor_response && (
-                      <div className="p-3 bg-bg-tertiary rounded mt-2">
-                        <div className="text-xs text-fg-muted mb-1">Advisor Response</div>
-                        <p className="text-sm text-fg-secondary">{flag.advisor_response}</p>
+          ) : flags.map((flag: any) => {
+            const biasKey = inferBiasKey(flag.client_behavior)
+            const bias = BIAS_LABELS[biasKey]
+            return (
+              <Card key={flag.id}>
+                <CardContent>
+                  <div className="flex items-start gap-4">
+                    <span className={`mt-1 w-3 h-3 rounded-full flex-shrink-0 ${flag.severity === 'HIGH' ? 'bg-danger' : flag.severity === 'MEDIUM' ? 'bg-warning' : 'bg-success'}`} />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className="text-fg-muted text-sm font-mono">{format(new Date(flag.date), 'MMM d, yyyy')}</span>
+                        <Badge variant={flag.resolved ? 'success' : 'warning'}>{flag.resolved ? 'Resolved' : 'Open'}</Badge>
+                        <Badge variant={flag.severity === 'HIGH' ? 'danger' : flag.severity === 'MEDIUM' ? 'warning' : 'neutral'} size="sm">{flag.severity}</Badge>
+                        {/* Bias type pill */}
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${bias.bg} ${bias.color}`}>{bias.label}</span>
+                        {flag.is_internal && <Badge variant="neutral" size="sm">Internal</Badge>}
                       </div>
-                    )}
+                      <div className="text-xs text-fg-muted mb-1">Market Context</div>
+                      <p className="text-sm text-fg-secondary mb-3">{flag.market_context}</p>
+                      <div className="text-xs text-fg-muted mb-1">Client Behavior</div>
+                      <p className="text-fg-primary mb-2">{flag.client_behavior}</p>
+                      {flag.advisor_response && (
+                        <div className="p-3 bg-bg-tertiary rounded mt-2">
+                          <div className="text-xs text-fg-muted mb-1">Advisor Response</div>
+                          <p className="text-sm text-fg-secondary">{flag.advisor_response}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </div>
 
       {snapshots.length > 0 && (
         <div>
-          <h3 className="font-serif text-xl mb-4 text-fg-primary">Behavioral Snapshots</h3>
-          <div className="space-y-4">
-            {snapshots.map((s: any) => (
-              <Card key={s.id}>
-                <CardContent>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-fg-muted text-sm font-mono">{format(new Date(s.date), 'MMMM d, yyyy')}</span>
-                    <TrendingUp className="w-5 h-5 text-accent" />
-                  </div>
-                  <dl className="grid grid-cols-2 gap-4">
-                    <div><dt className="text-xs text-fg-muted mb-1">Temperament</dt><dd className="text-fg-primary font-medium">{s.decision_temperament}</dd></div>
-                    <div><dt className="text-xs text-fg-muted mb-1">Stated Risk</dt><dd className="text-fg-primary font-medium">{s.stated_risk_score}/10</dd></div>
-                    <div><dt className="text-xs text-fg-muted mb-1">Revealed Risk</dt><dd className="text-fg-primary font-medium">{s.revealed_risk_score}/10</dd></div>
-                    <div><dt className="text-xs text-fg-muted mb-1">Panic Threshold</dt><dd className="text-fg-primary font-medium">{s.panic_threshold}</dd></div>
-                  </dl>
-                  {s.advisor_observation && <p className="text-sm text-fg-secondary mt-3">{s.advisor_observation}</p>}
-                </CardContent>
-              </Card>
-            ))}
+          <h3 className="font-serif text-xl mb-4 text-fg-primary">Risk Profile Over Time</h3>
+          <div className="space-y-3">
+            {snapshots.map((s: any, i: number) => {
+              const sScore = s.stated_risk_score ?? 0
+              const rScore = s.revealed_risk_score ?? 0
+              return (
+                <Card key={s.id}>
+                  <CardContent>
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <span className="text-fg-muted text-sm font-mono">{format(new Date(s.date), 'MMMM d, yyyy')}</span>
+                        {i === 0 && <span className="ml-2 text-xs text-accent font-medium">Latest</span>}
+                      </div>
+                      {s.decision_temperament && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-bg-tertiary text-fg-secondary font-medium">{s.decision_temperament}</span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <div className="flex justify-between text-xs text-fg-muted mb-1">
+                          <span>Stated</span><span>{sScore}/10</span>
+                        </div>
+                        <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${sScore * 10}%`, background: 'var(--accent)', opacity: 0.4 }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs text-fg-muted mb-1">
+                          <span>Revealed</span><span>{rScore}/10</span>
+                        </div>
+                        <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${rScore * 10}%`, background: 'var(--accent)' }} />
+                        </div>
+                      </div>
+                    </div>
+                    {s.advisor_observation && <p className="text-sm text-fg-secondary mt-3 italic">"{s.advisor_observation}"</p>}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
       )}
