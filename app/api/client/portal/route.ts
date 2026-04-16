@@ -3,9 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 export async function GET(request: Request) {
+  const supabase = createServiceClient()
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
@@ -14,7 +13,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }
 
-    // Get client profile
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('*')
@@ -30,45 +28,69 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
-    // Get advisor info using advisor_id from the client record
-    const { data: advisor } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', client.advisor_id)
-      .maybeSingle()
-
-    // Get goals
-    const { data: goals } = await supabase
-      .from('goals')
-      .select('*')
-      .eq('client_id', client.id)
-      .order('created_at', { ascending: false })
-
-    // Get decisions (non-internal only)
-    const { data: decisions } = await supabase
-      .from('decision_log')
-      .select('*')
-      .eq('client_id', client.id)
-      .eq('is_internal', false)
-      .order('date', { ascending: false })
-
-    // Get next scheduled review
-    const { data: nextReview } = await supabase
-      .from('review_cycles')
-      .select('*')
-      .eq('client_id', client.id)
-      .eq('status', 'SCHEDULED')
-      .gte('scheduled_date', new Date().toISOString())
-      .order('scheduled_date', { ascending: true })
-      .limit(1)
-      .maybeSingle()
+    const [
+      advisorRes,
+      goalsRes,
+      decisionsRes,
+      nextReviewRes,
+      pastReviewsRes,
+      documentsRes,
+      snapshotsRes,
+    ] = await Promise.all([
+      supabase
+        .from('users')
+        .select('id, name, email')
+        .eq('id', client.advisor_id)
+        .maybeSingle(),
+      supabase
+        .from('goals')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('decision_log')
+        .select('*')
+        .eq('client_id', client.id)
+        .eq('is_internal', false)
+        .order('date', { ascending: false }),
+      supabase
+        .from('review_cycles')
+        .select('*')
+        .eq('client_id', client.id)
+        .eq('status', 'SCHEDULED')
+        .gte('scheduled_date', new Date().toISOString())
+        .order('scheduled_date', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('review_cycles')
+        .select('*')
+        .eq('client_id', client.id)
+        .eq('status', 'COMPLETED')
+        .order('scheduled_date', { ascending: false })
+        .limit(10),
+      supabase
+        .from('documents')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('uploaded_at', { ascending: false }),
+      supabase
+        .from('behavioral_snapshots')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false })
+        .limit(5),
+    ])
 
     return NextResponse.json({
       client,
-      advisor,
-      goals: goals || [],
-      decisions: decisions || [],
-      nextReview: nextReview || null,
+      advisor: advisorRes.data,
+      goals: goalsRes.data || [],
+      decisions: decisionsRes.data || [],
+      nextReview: nextReviewRes.data || null,
+      pastReviews: pastReviewsRes.data || [],
+      documents: documentsRes.data || [],
+      snapshots: snapshotsRes.data || [],
     })
   } catch (error: any) {
     console.error('Client portal error:', error)
