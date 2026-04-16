@@ -3,9 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 export async function POST(request: NextRequest) {
+  const supabase = createServiceClient()
   try {
     const body = await request.json()
     const { type, ...data } = body

@@ -3,10 +3,9 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 // Create a new behavioral flag
 export async function POST(request: NextRequest) {
+  const supabase = createServiceClient()
   try {
     const body = await request.json()
     const { client_id, date, market_context, client_behavior, advisor_response, severity, is_internal } = body
@@ -41,6 +40,7 @@ export async function POST(request: NextRequest) {
 
 // Resolve a flag
 export async function PATCH(request: NextRequest) {
+  const supabase = createServiceClient()
   try {
     const { flag_id, resolved } = await request.json()
 

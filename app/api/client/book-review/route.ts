@@ -3,10 +3,9 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 // Book or reschedule a review
 export async function POST(request: Request) {
+  const supabase = createServiceClient()
   try {
     const { client_id, advisor_id, scheduled_datetime, reschedule_id } = await request.json()
 
@@ -92,6 +91,7 @@ export async function POST(request: Request) {
 
 // Cancel — just delete the row
 export async function DELETE(request: Request) {
+  const supabase = createServiceClient()
   try {
     const { review_id } = await request.json()
 

@@ -4,9 +4,9 @@ import { addDays, format, setHours, setMinutes, isAfter, isBefore } from 'date-f
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 export async function GET(request: Request) {
+  const supabase = createServiceClient() // ✅ inside request scope
+
   const { searchParams } = new URL(request.url)
   const advisorId = searchParams.get('advisorId')
   const daysAhead = parseInt(searchParams.get('days') || '21')
@@ -20,7 +20,6 @@ export async function GET(request: Request) {
     const today = new Date()
     const rangeEnd = addDays(today, daysAhead)
 
-    // 1. Get advisor weekly availability
     const { data: availability, error: availError } = await supabase
       .from('advisor_availability')
       .select('*')
@@ -32,7 +31,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ slots: [] })
     }
 
-    // 2. Get all client IDs belonging to this advisor
     const { data: advisorClients } = await supabase
       .from('clients')
       .select('id')
@@ -40,8 +38,6 @@ export async function GET(request: Request) {
 
     const clientIds = (advisorClients || []).map((c: any) => c.id)
 
-    // 3. Get booked slots — only SCHEDULED rows count as taken
-    //    If exclude_review_id is passed (reschedule flow), that row's slot is freed up
     let booked: any[] = []
     if (clientIds.length > 0) {
       let query = supabase
@@ -66,13 +62,11 @@ export async function GET(request: Request) {
       bookedSet.add(`${format(d, 'yyyy-MM-dd')}_${format(d, 'HH:mm')}`)
     })
 
-    // 4. Build availability map: dayOfWeek -> { start, end }
     const availMap: Record<number, { start: string; end: string }> = {}
     availability.forEach((a: any) => {
       availMap[a.day_of_week] = { start: a.start_time, end: a.end_time }
     })
 
-    // 5. Generate all 1-hour slots
     const slots: { date: string; time: string; datetime: string; label: string }[] = []
 
     let cursor = addDays(today, 1)

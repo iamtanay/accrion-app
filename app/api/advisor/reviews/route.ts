@@ -3,10 +3,9 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 // Create a new review (existing)
 export async function POST(request: NextRequest) {
+  const supabase = createServiceClient()
   try {
     const reviewData = await request.json()
     const { data, error } = await supabase
@@ -23,6 +22,7 @@ export async function POST(request: NextRequest) {
 
 // Mark a review as complete
 export async function PATCH(request: NextRequest) {
+  const supabase = createServiceClient()
   try {
     const { review_id, advisor_notes, drift_assessment } = await request.json()
 

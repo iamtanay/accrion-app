@@ -3,10 +3,9 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createServiceClient()
-
 // GET: fetch current availability for an advisor
 export async function GET(request: Request) {
+  const supabase = createServiceClient()
   const { searchParams } = new URL(request.url)
   const advisorId = searchParams.get('advisorId')
 
@@ -27,6 +26,7 @@ export async function GET(request: Request) {
 
 // POST: upsert all 7 days of availability for an advisor
 export async function POST(request: Request) {
+  const supabase = createServiceClient()
   try {
     const { advisorId, availability } = await request.json()
 
