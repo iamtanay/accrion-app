@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     // Check email not already taken in auth
     const { data: existingUsers } = await supabase.auth.admin.listUsers()
-    const emailTaken = existingUsers?.users?.some(u => u.email === body.email)
+    const emailTaken = existingUsers?.users?.some((u: { email?: string }) => u.email === body.email)
     if (emailTaken) {
       return NextResponse.json(
         { error: 'A user with this email already exists' },

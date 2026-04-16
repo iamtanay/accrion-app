@@ -2,6 +2,17 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getGoalsByClientId } from './goals'
 import { getFlagsByClientId } from './flags'
 import { getReviewsByClientId } from './reviews'
+import type { PostgrestError } from '@supabase/supabase-js'
+
+type QueryResult<T> = { data: T[] | null; error: PostgrestError | null }
+
+function handleResult<T>({ data, error }: QueryResult<T>, label: string): T[] {
+  if (error) {
+    console.error(`Error fetching ${label}:`, error)
+    return []
+  }
+  return data || []
+}
 
 export async function getClientWithAllData(clientId: string) {
   const supabase = createServiceClient()
@@ -18,50 +29,26 @@ export async function getClientWithAllData(clientId: string) {
       .select('*')
       .eq('client_id', clientId)
       .order('date', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error fetching decisions:', error)
-          return []
-        }
-        return data || []
-      }),
+      .then((result: QueryResult<unknown>) => handleResult(result, 'decisions')),
     getReviewsByClientId(clientId),
     supabase
       .from('communications')
       .select('*')
       .eq('client_id', clientId)
       .order('date', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error fetching communications:', error)
-          return []
-        }
-        return data || []
-      }),
+      .then((result: QueryResult<unknown>) => handleResult(result, 'communications')),
     supabase
       .from('documents')
       .select('*')
       .eq('client_id', clientId)
       .order('uploaded_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error fetching documents:', error)
-          return []
-        }
-        return data || []
-      }),
+      .then((result: QueryResult<unknown>) => handleResult(result, 'documents')),
     supabase
       .from('behavioral_snapshots')
       .select('*')
       .eq('client_id', clientId)
       .order('date', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error fetching snapshots:', error)
-          return []
-        }
-        return data || []
-      }),
+      .then((result: QueryResult<unknown>) => handleResult(result, 'snapshots')),
   ])
 
   if (client.error) {
