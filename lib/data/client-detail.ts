@@ -1,10 +1,10 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getGoalsByClientId } from './goals'
 import { getFlagsByClientId } from './flags'
 import { getReviewsByClientId } from './reviews'
 
 export async function getClientWithAllData(clientId: string) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const [client, goals, flags, decisions, reviews, communications, documents, snapshots] = await Promise.all([
     supabase
       .from('clients')

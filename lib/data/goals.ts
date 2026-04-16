@@ -1,7 +1,7 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function getGoalsByClientId(clientId: string) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('goals')
     .select('*')
@@ -27,7 +27,7 @@ export async function createGoal(goalData: {
   status?: string
   progress_notes?: string
 }) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('goals')
     .insert([goalData])
@@ -39,7 +39,7 @@ export async function createGoal(goalData: {
 }
 
 export async function updateGoal(goalId: string, updates: any) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('goals')
     .update(updates)
@@ -52,7 +52,7 @@ export async function updateGoal(goalId: string, updates: any) {
 }
 
 export async function deleteGoal(goalId: string) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { error } = await supabase
     .from('goals')
     .delete()

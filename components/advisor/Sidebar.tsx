@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { createClient } from '@/lib/supabase/client'
 
 const navigation = [
   { name: 'Dashboard', href: '/advisor/dashboard', icon: LayoutDashboard },
@@ -28,9 +29,11 @@ export function Sidebar() {
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const handleSignOut = () => {
-    sessionStorage.removeItem('user')
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
     router.push('/login')
+    router.refresh()
   }
 
   const NavLinks = ({ onNav }: { onNav?: () => void }) => (

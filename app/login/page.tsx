@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Eye, EyeOff, Loader2, Lock } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,25 +22,41 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const supabase = createClient()
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed')
+      if (signInError) {
+        throw new Error('Invalid email or password')
       }
 
-      sessionStorage.setItem('user', JSON.stringify(data))
+      const user = data.user
+      let role: string = user.user_metadata?.role ?? ''
 
-      if (data.role === 'ADVISOR') {
+      // If role not in metadata, look up from the users table
+      if (!role) {
+        const { data: dbUser } = await supabase
+          .from('users')
+          .select('role, name')
+          .eq('email', user.email)
+          .maybeSingle()
+
+        role = dbUser?.role ?? 'CLIENT'
+        // Store role in metadata for next time
+        await supabase.auth.updateUser({ data: { role, name: dbUser?.name ?? '' } })
+      }
+
+      // Redirect based on role
+      if (role === 'ADVISOR') {
         router.push('/advisor/dashboard')
       } else {
         router.push('/client/portal')
       }
+
+      router.refresh()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -73,7 +90,6 @@ export default function LoginPage() {
         <div className="w-full max-w-[480px]">
           {/* Logo & Header */}
           <div className="relative text-center mb-10">
-            {/* Theme toggle — top right of logo area */}
             <div className="absolute right-0 top-0">
               <ThemeToggle />
             </div>
@@ -100,10 +116,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Field */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-fg-primary mb-2"
-                >
+                <label htmlFor="email" className="block text-sm font-medium text-fg-primary mb-2">
                   Email Address
                 </label>
                 <input
@@ -125,10 +138,7 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-fg-primary mb-2"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-fg-primary mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -155,11 +165,7 @@ export default function LoginPage() {
                                transition-colors disabled:opacity-50 p-1"
                     tabIndex={-1}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>

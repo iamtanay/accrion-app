@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, Bell, Shield, Clock, Loader2, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { createClient } from '@/lib/supabase/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,12 +75,15 @@ export default function SettingsPage() {
   })
 
   useEffect(() => {
-    const user = sessionStorage.getItem('user')
-    if (!user) return
-    const parsedUser = JSON.parse(user)
-    const id = parsedUser.id || ''
-    setUserData({ name: parsedUser.name || '', email: parsedUser.email || '', id })
-    if (!id) return
+    const init = async () => {
+      const supabase = createClient()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const id = authUser.id
+      const name = authUser.user_metadata?.name ?? ''
+      const email = authUser.email ?? ''
+      setUserData({ name, email, id })
+      if (!id) return
 
     fetch(`/api/advisor/availability/settings?advisorId=${id}`)
       .then((res) => res.json())
@@ -101,6 +105,8 @@ export default function SettingsPage() {
         }
       })
       .catch(() => {})
+    }
+    init()
   }, [])
 
   const toggleDay = (dow: number) => {

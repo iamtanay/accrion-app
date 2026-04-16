@@ -8,6 +8,7 @@ import {
   X, CheckCircle2, Loader2, User, RefreshCw, Trash2, AlertTriangle
 } from 'lucide-react'
 import { format, parseISO, addDays } from 'date-fns'
+import { createClient } from '@/lib/supabase/client'
 
 type ModalMode = 'book' | 'reschedule' | 'cancel'
 
@@ -34,12 +35,16 @@ export default function ClientPortal() {
   const [calendarOffset, setCalendarOffset] = useState(0)
 
   useEffect(() => {
-    const userStr = sessionStorage.getItem('user')
-    if (!userStr) { router.push('/login'); return }
-    const userData = JSON.parse(userStr)
-    if (userData.role !== 'CLIENT') { router.push('/advisor/dashboard'); return }
-    setUser(userData)
-    fetchClientData(userData.id)
+    const init = async () => {
+      const supabase = createClient()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) { router.push('/login'); return }
+      const role = authUser.user_metadata?.role ?? 'CLIENT'
+      if (role !== 'CLIENT') { router.push('/advisor/dashboard'); return }
+      setUser({ id: authUser.id, email: authUser.email, name: authUser.user_metadata?.name ?? authUser.email, role })
+      fetchClientData(authUser.id)
+    }
+    init()
   }, [router])
 
   const fetchClientData = async (userId: string) => {
@@ -167,9 +172,11 @@ export default function ClientPortal() {
     }
   }
 
-  const handleSignOut = () => {
-    sessionStorage.removeItem('user')
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
     router.push('/login')
+    router.refresh()
   }
 
   const weekDates = Array.from({ length: 7 }, (_, i) =>

@@ -1,7 +1,7 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function getAllReviews() {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('review_cycles')
     .select(`
@@ -18,7 +18,7 @@ export async function getAllReviews() {
 }
 
 export async function getReviewsByClientId(clientId: string) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('review_cycles')
     .select('*')
@@ -34,7 +34,7 @@ export async function getReviewsByClientId(clientId: string) {
 }
 
 export async function getUpcomingReviews() {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const today = new Date().toISOString().split('T')[0]
 
   const { data, error } = await supabase
@@ -61,7 +61,7 @@ export async function createReview(reviewData: {
   notes?: string
   status: string
 }) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('review_cycles')
     .insert([reviewData])
@@ -73,7 +73,7 @@ export async function createReview(reviewData: {
 }
 
 export async function updateReview(reviewId: string, updates: any) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('review_cycles')
     .update(updates)

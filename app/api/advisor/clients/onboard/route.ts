@@ -1,55 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import bcrypt from 'bcryptjs'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const supabase = createServiceClient()
 
-    // Check email not already taken
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', body.email)
-      .maybeSingle()
-
-    if (existingUser) {
+    // Check email not already taken in auth
+    const { data: existingUsers } = await supabase.auth.admin.listUsers()
+    const emailTaken = existingUsers?.users?.some(u => u.email === body.email)
+    if (emailTaken) {
       return NextResponse.json(
         { error: 'A user with this email already exists' },
         { status: 400 }
       )
     }
 
-    // Hash password — default is 'client123'
-    const passwordHash = await bcrypt.hash('client123', 10)
-
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert({
-        email: body.email,
-        name: body.name,
-        password_hash: passwordHash,
+    // Create the auth user — trigger auto-creates the public.users row
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: body.email,
+      password: 'client123',
+      email_confirm: true,           // skip confirmation email for advisor-created accounts
+      user_metadata: {
         role: 'CLIENT',
-      })
-      .select()
-      .single()
+        name: body.name,
+      },
+    })
 
-    if (userError) throw userError
+    if (authError) throw authError
 
-    // Get the advisor who is creating this client (passed from the session)
+    const newUserId = authData.user.id
+
+    // Get advisor id from the request body (set by the client from supabase session)
     const advisorId = body.advisorId || null
 
     const { data: newClient, error: clientError } = await supabase
       .from('clients')
       .insert({
-        user_id: newUser.id,
+        user_id: newUserId,
         advisor_id: advisorId,
         phone: body.phone || null,
         date_of_birth: body.dateOfBirth || null,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClientWithAllData } from '@/lib/data/client-detail'
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +36,7 @@ export async function PATCH(
   try {
     const clientId = params.id
     const updates = await request.json()
-    const supabase = getServerSupabase()
+    const supabase = createServiceClient()
 
     const { name, email, ...clientUpdates } = updates
 
@@ -48,14 +48,15 @@ export async function PATCH(
         .maybeSingle()
 
       if (client?.user_id) {
-        const userUpdates: any = {}
-        if (name) userUpdates.name = name
-        if (email) userUpdates.email = email
+        // Update auth.users — the update trigger syncs public.users automatically
+        const authUpdates: any = {}
+        if (email) authUpdates.email = email
+        if (name) authUpdates.user_metadata = { name }
 
-        const { error: userError } = await supabase
-          .from('users')
-          .update(userUpdates)
-          .eq('id', client.user_id)
+        const { error: userError } = await supabase.auth.admin.updateUserById(
+          client.user_id,
+          authUpdates
+        )
 
         if (userError) throw userError
       }

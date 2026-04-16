@@ -1,8 +1,8 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { DashboardStats } from '@/lib/types'
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
@@ -42,7 +42,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function getUpcomingReviews(limit: number = 5) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('review_cycles')
     .select('id, scheduled_date, status, drift_assessment, client_id, client:clients(id, user:users!clients_user_id_fkey(name))')
@@ -60,7 +60,7 @@ export async function getUpcomingReviews(limit: number = 5) {
 }
 
 export async function getOpenFlags(limit: number = 5) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .select('id, date, client_behavior, severity, resolved, client_id, client:clients(id, user:users!clients_user_id_fkey(name))')
@@ -77,7 +77,7 @@ export async function getOpenFlags(limit: number = 5) {
 }
 
 export async function getRecentActivity(limit: number = 10) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('decision_log')
     .select('id, date, decision, client_id, client:clients(id, user:users!clients_user_id_fkey(name))')

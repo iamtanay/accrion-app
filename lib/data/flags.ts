@@ -1,7 +1,7 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function getFlagsByClientId(clientId: string) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .select('*')
@@ -17,7 +17,7 @@ export async function getFlagsByClientId(clientId: string) {
 }
 
 export async function getAllActiveFlags() {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .select(`
@@ -43,7 +43,7 @@ export async function createFlag(flagData: {
   severity?: string
   is_internal?: boolean
 }) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .insert([{
@@ -59,7 +59,7 @@ export async function createFlag(flagData: {
 }
 
 export async function updateFlag(flagId: string, updates: any) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .update(updates)
@@ -72,7 +72,7 @@ export async function updateFlag(flagId: string, updates: any) {
 }
 
 export async function resolveFlag(flagId: string) {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .update({ resolved: true })

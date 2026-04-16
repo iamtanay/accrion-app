@@ -1,8 +1,8 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { ClientProfile, ClientWithUser } from '@/lib/types'
 
 export async function getAllClients(): Promise<ClientWithUser[]> {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('clients')
     .select('*, user:users!clients_user_id_fkey(*)')
@@ -17,7 +17,7 @@ export async function getAllClients(): Promise<ClientWithUser[]> {
 }
 
 export async function getClientById(id: string): Promise<ClientWithUser | null> {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('clients')
     .select('*, user:users!clients_user_id_fkey(*)')
@@ -33,7 +33,7 @@ export async function getClientById(id: string): Promise<ClientWithUser | null> 
 }
 
 export async function getActiveClients(): Promise<ClientWithUser[]> {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('clients')
     .select('*, user:users!clients_user_id_fkey(*)')
@@ -49,7 +49,7 @@ export async function getActiveClients(): Promise<ClientWithUser[]> {
 }
 
 export async function getClientsCount(): Promise<number> {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { count, error } = await supabase
     .from('clients')
     .select('*', { count: 'exact', head: true })

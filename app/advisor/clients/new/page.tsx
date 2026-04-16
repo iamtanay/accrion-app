@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, DollarSign, TrendingUp, Brain, Loader2, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,8 +71,9 @@ export default function NewClientPage() {
     setLoading(true)
 
     try {
-      const userStr = sessionStorage.getItem('user')
-      const advisorId = userStr ? JSON.parse(userStr).id : null
+      const supabase = createClient()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const advisorId = authUser?.id ?? null
       const response = await fetch('/api/advisor/clients/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

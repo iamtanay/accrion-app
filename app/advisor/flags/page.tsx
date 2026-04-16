@@ -1,4 +1,4 @@
-import { getServerSupabase } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { Flag, ArrowRight, AlertCircle } from 'lucide-react'
@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 export const dynamic = 'force-dynamic'
 
 async function getAllFlags() {
-  const supabase = getServerSupabase()
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('behavioral_flags')
     .select('*, client:clients(id, user:users!clients_user_id_fkey(name, email))')
