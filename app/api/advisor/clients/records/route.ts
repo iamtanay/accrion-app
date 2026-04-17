@@ -85,6 +85,21 @@ export async function POST(request: NextRequest) {
         result = row
         break
       }
+      case 'document': {
+        const { error, data: row } = await supabase
+          .from('documents')
+          .insert([{
+            client_id: data.client_id,
+            name: data.name,
+            type: data.doc_type || 'OTHER',
+            url: data.url,
+            uploaded_at: new Date().toISOString(),
+          }])
+          .select().single()
+        if (error) throw error
+        result = row
+        break
+      }
       default:
         return NextResponse.json({ error: `Unknown type: ${type}` }, { status: 400 })
     }

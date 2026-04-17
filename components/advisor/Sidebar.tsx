@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  Flag,
   Settings,
   LogOut,
   Menu,
@@ -22,7 +21,6 @@ const navigation = [
   { name: 'Dashboard', href: '/advisor/dashboard', icon: LayoutDashboard },
   { name: 'Clients',   href: '/advisor/clients',   icon: Users },
   { name: 'Reviews',   href: '/advisor/reviews',   icon: Calendar },
-  { name: 'Flags',     href: '/advisor/flags',     icon: Flag },
   { name: 'Settings',  href: '/advisor/settings',  icon: Settings },
 ]
 
@@ -67,13 +65,11 @@ export function Sidebar() {
     <>
       {/* ── Desktop sidebar ── */}
       <div className="hidden md:flex w-64 bg-bg-secondary border-r border-border h-screen flex-col fixed left-0 top-0 z-30">
-        {/* Logo */}
         <div className="px-6 py-6 border-b border-border">
           <h1 className="font-serif text-2xl text-fg-primary">Accrion.</h1>
           <p className="text-xs text-fg-muted mt-0.5">Advisory Platform</p>
         </div>
 
-        {/* Quick Actions */}
         <div className="px-4 pt-4 pb-2">
           <div className="flex gap-2">
             <Link
@@ -85,12 +81,10 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-4 py-2 space-y-0.5 overflow-y-auto">
           <NavLinks />
         </nav>
 
-        {/* Bottom: advisor avatar + theme + sign out */}
         <div className="border-t border-border">
           <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">

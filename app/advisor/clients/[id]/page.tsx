@@ -389,6 +389,7 @@ export default function ClientDetailPage() {
       {addModal === 'flag' && <AddFlagModal clientId={clientId} onClose={() => setAddModal(null)} onAdd={reload} />}
       {addModal === 'decision' && <AddDecisionModal clientId={clientId} onClose={() => setAddModal(null)} onAdd={reload} />}
       {addModal === 'communication' && <AddCommModal clientId={clientId} onClose={() => setAddModal(null)} onAdd={reload} />}
+      {addModal === 'document' && <AddDocumentModal clientId={clientId} onClose={() => setAddModal(null)} onAdd={reload} />}
 
       <div className="min-h-screen">
         <header className="border-b border-border bg-bg-secondary">
@@ -425,7 +426,7 @@ export default function ClientDetailPage() {
                 case 'decisions':  return <DecisionsTab decisions={decisions} onAdd={() => setAddModal('decision')} />
                 case 'reviews':    return <ReviewsTab reviews={reviews} onComplete={setCompletingReview} />
                 case 'communications': return <CommunicationsTab communications={communications} onAdd={() => setAddModal('communication')} />
-                case 'documents':  return <DocumentsTab documents={documents} />
+                case 'documents':  return <DocumentsTab documents={documents} onAdd={() => setAddModal('document')} />
                 default: return null
               }
             }}
@@ -840,27 +841,146 @@ function CommunicationsTab({ communications, onAdd }: any) {
   )
 }
 
-function DocumentsTab({ documents }: any) {
+// ── Add Document Modal ────────────────────────────────────────
+function AddDocumentModal({ clientId, onClose, onAdd }: any) {
+  const [form, setForm] = useState({ name: '', doc_type: 'OTHER', url: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.name.trim()) { setError('Document name is required'); return }
+    if (!form.url.trim()) { setError('URL is required'); return }
+    try { new URL(form.url) } catch { setError('Please enter a valid URL (e.g. https://...)'); return }
+    setSaving(true); setError('')
+    try {
+      const res = await fetch('/api/advisor/clients/records', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'document', client_id: clientId, ...form }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error)
+      onAdd(); onClose()
+    } catch (err: any) { setError(err.message) } finally { setSaving(false) }
+  }
+
+  return (
+    <Modal title="Add Document" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        {error && <div className="px-3 py-2 bg-danger/10 border border-danger/30 rounded text-danger text-sm">{error}</div>}
+        <div>
+          <label className={labelCls}>Document Name *</label>
+          <input className={inputCls} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. KYC Form 2024, Investment Policy Statement" />
+        </div>
+        <div>
+          <label className={labelCls}>Document Type</label>
+          <select className={inputCls} value={form.doc_type} onChange={e => set('doc_type', e.target.value)}>
+            <option value="KYC">KYC</option>
+            <option value="AGREEMENT">Agreement</option>
+            <option value="STATEMENT">Statement</option>
+            <option value="REPORT">Report</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Document URL *</label>
+          <input
+            className={inputCls}
+            type="url"
+            value={form.url}
+            onChange={e => set('url', e.target.value)}
+            placeholder="https://drive.google.com/file/... or any public link"
+          />
+          <p className="text-xs text-fg-muted mt-1">Paste a link to the document (Google Drive, Dropbox, etc.)</p>
+        </div>
+        <div className="flex justify-end gap-3 pt-2">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-bg-tertiary transition-colors">Cancel</button>
+          <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}{saving ? 'Saving...' : 'Add Document'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function DocumentsTab({ documents, onAdd }: { documents: any[]; onAdd: () => void }) {
+  const docTypeConfig: Record<string, { label: string; color: string; bg: string }> = {
+    KYC:       { label: 'KYC',       color: 'text-accent',      bg: 'bg-accent/10' },
+    AGREEMENT: { label: 'Agreement', color: 'text-accent-warm', bg: 'bg-accent-warm/10' },
+    STATEMENT: { label: 'Statement', color: 'text-success',     bg: 'bg-success/10' },
+    REPORT:    { label: 'Report',    color: 'text-warning',     bg: 'bg-warning/10' },
+    OTHER:     { label: 'Document',  color: 'text-fg-muted',    bg: 'bg-bg-tertiary' },
+  }
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-fg-muted">
+          {documents.length} document{documents.length !== 1 ? 's' : ''} on file
+        </p>
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-accent/90 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add Document
+        </button>
+      </div>
+
       {documents.length === 0 ? (
-        <Card><CardContent><p className="text-fg-muted text-center py-8">No documents uploaded</p></CardContent></Card>
-      ) : documents.map((doc: any) => (
-        <Card key={doc.id}>
+        <Card>
           <CardContent>
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4 flex-1">
-                <FolderOpen className="w-5 h-5 text-fg-muted flex-shrink-0 mt-1" />
-                <div>
-                  <div className="text-fg-primary font-medium mb-1">{doc.name}</div>
-                  <div className="text-sm text-fg-muted">{format(new Date(doc.uploaded_at), 'MMM d, yyyy')}</div>
-                </div>
-              </div>
-              <button className="px-3 py-1 text-sm border border-border rounded hover:bg-bg-tertiary transition-colors">View</button>
+            <div className="text-center py-12">
+              <FolderOpen className="w-10 h-10 text-fg-muted mx-auto mb-3 opacity-40" />
+              <p className="text-fg-muted mb-1">No documents yet</p>
+              <p className="text-sm text-fg-muted/60 mb-4">Add KYC forms, agreements, statements, and reports here.</p>
+              <button onClick={onAdd} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
+                <Plus className="w-4 h-4" /> Add First Document
+              </button>
             </div>
           </CardContent>
         </Card>
-      ))}
+      ) : (
+        <div className="space-y-2">
+          {documents.map((doc: any) => {
+            const cfg = docTypeConfig[doc.type] || docTypeConfig.OTHER
+            return (
+              <Card key={doc.id}>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
+                      <FolderOpen className={`w-5 h-5 ${cfg.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-fg-primary font-medium truncate">{doc.name}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.color}`}>
+                          {cfg.label}
+                        </span>
+                        <span className="text-xs text-fg-muted">
+                          {format(new Date(doc.uploaded_at), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                    </div>
+                    {doc.url && (
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-bg-tertiary transition-colors text-fg-secondary flex-shrink-0"
+                      >
+                        View
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

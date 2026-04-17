@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, DollarSign, TrendingUp, Brain, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, DollarSign, TrendingUp, Brain, Loader2, CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -14,10 +14,12 @@ export default function NewClientPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
+  const [showPassword, setShowPassword] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    initialPassword: 'client123',
     createCredentials: true,
     phone: '',
     dateOfBirth: '',
@@ -77,7 +79,7 @@ export default function NewClientPage() {
       const response = await fetch('/api/advisor/clients/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, advisorId })
+        body: JSON.stringify({ ...formData, advisorId, initialPassword: formData.createCredentials ? formData.initialPassword : undefined })
       })
 
       const data = await response.json()
@@ -203,6 +205,39 @@ export default function NewClientPage() {
                     </div>
                   </label>
                 </div>
+
+                {formData.createCredentials && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-fg-primary mb-2">
+                      <Lock className="w-4 h-4 inline mr-1" />
+                      Initial Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.initialPassword}
+                        onChange={(e) => updateField('initialPassword', e.target.value)}
+                        className="w-full px-4 py-3 pr-12 bg-bg-primary border border-border rounded-lg text-fg-primary
+                                   focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-mono"
+                        placeholder="Set a secure password"
+                        minLength={8}
+                        required={formData.createCredentials}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-primary transition-colors p-1"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-fg-muted mt-1.5">
+                      The client will use this to log in. Share it securely — they can change it later.
+                      Minimum 8 characters.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-fg-primary mb-2">

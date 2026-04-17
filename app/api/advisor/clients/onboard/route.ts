@@ -18,11 +18,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the auth user — trigger auto-creates the public.users row
+    // Use the configured password, falling back to default
+    const password = body.initialPassword?.trim() || 'client123'
+
+    // Create the auth user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: body.email,
-      password: 'client123',
-      email_confirm: true,           // skip confirmation email for advisor-created accounts
+      password,
+      email_confirm: true,
       user_metadata: {
         role: 'CLIENT',
         name: body.name,
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const newUserId = authData.user.id
 
-    // Get advisor id from the request body (set by the client from supabase session)
+    // Advisor is whoever creates the account (passed from client session)
     const advisorId = body.advisorId || null
 
     const { data: newClient, error: clientError } = await supabase
@@ -70,13 +73,14 @@ export async function POST(request: NextRequest) {
       clientId: newClient.id,
       credentials: {
         email: body.email,
-        password: 'client123',
+        password,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to create client'
     console.error('Onboarding error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to create client' },
+      { error: message },
       { status: 500 }
     )
   }
