@@ -133,13 +133,7 @@ export function ReviewsPageClient({ reviews, clients }: ReviewsPageClientProps) 
   const scheduledReviews = reviewList.filter((r: any) => r.status === 'SCHEDULED')
   const completedReviews = reviewList.filter((r: any) => r.status === 'COMPLETED')
 
-  const handleScheduleReview = async (reviewData: any) => {
-    const res = await fetch('/api/advisor/reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reviewData),
-    })
-    if (!res.ok) throw new Error('Failed to schedule review')
+  const handleScheduleReview = async () => {
     window.location.reload()
   }
 
@@ -170,7 +164,7 @@ export function ReviewsPageClient({ reviews, clients }: ReviewsPageClientProps) 
         <ScheduleReviewModal
           clients={clients}
           onClose={() => setShowScheduleModal(false)}
-          onSchedule={handleScheduleReview}
+          onScheduled={handleScheduleReview}
         />
       )}
 

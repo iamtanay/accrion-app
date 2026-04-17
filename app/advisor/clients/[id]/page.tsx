@@ -344,12 +344,7 @@ export default function ClientDetailPage() {
     await reload()
   }
 
-  const handleScheduleReview = async (reviewData: any) => {
-    const res = await fetch('/api/advisor/reviews', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reviewData),
-    })
-    if (!res.ok) throw new Error('Failed to schedule review')
+  const handleScheduleReview = async () => {
     await reload()
   }
 
@@ -383,7 +378,7 @@ export default function ClientDetailPage() {
   return (
     <>
       {showEditModal && <EditProfileModal client={client} onClose={() => setShowEditModal(false)} onSave={handleSaveProfile} />}
-      {showScheduleModal && <ScheduleReviewModal clientId={clientId} clientName={client.user?.name || 'Unknown'} onClose={() => setShowScheduleModal(false)} onSchedule={handleScheduleReview} />}
+      {showScheduleModal && <ScheduleReviewModal clientId={clientId} clientName={client.user?.name || 'Unknown'} advisorId={client.advisor_id} onClose={() => setShowScheduleModal(false)} onScheduled={handleScheduleReview} />}
       {completingReview && <CompleteReviewModal review={completingReview} onClose={() => setCompletingReview(null)} onComplete={handleComplete} />}
       {addModal === 'goal' && <AddGoalModal clientId={clientId} onClose={() => setAddModal(null)} onAdd={reload} />}
       {addModal === 'flag' && <AddFlagModal clientId={clientId} onClose={() => setAddModal(null)} onAdd={reload} />}
